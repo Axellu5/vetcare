@@ -19,6 +19,7 @@
 # docs
 .claude/
 ACTIONS_LOG.md
+BACKEND_SUMMARY.md
 CLAUDE.md
 SPEC.md
 
