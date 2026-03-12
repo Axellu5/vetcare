@@ -106,6 +106,21 @@ export default function PetsPage() {
   function handleSpecies(val) { setSpecies(val); setPage(1); }
   function handleSort(val)    { setSort(val);    setPage(1); }
 
+  /**
+   * Called when a sortable column header is clicked.
+   * Toggles direction if the same field is active; switches to the new field (asc) otherwise.
+   *
+   * @param {string} field
+   */
+  function handleSortColumn(field) {
+    if (sortBy === field) {
+      setSort(`${field}:${order === 'asc' ? 'desc' : 'asc'}`);
+    } else {
+      setSort(`${field}:asc`);
+    }
+    setPage(1);
+  }
+
   // ── Modal handlers ─────────────────────────────────────────────────────────
 
   function openCreate()      { setEditingPet(null); setModalOpen(true); }
@@ -235,7 +250,14 @@ export default function PetsPage() {
         ) : loading ? (
           <div className="px-5 py-14 text-center text-gray-400 text-sm">Kraunama…</div>
         ) : (
-          <PetsTable pets={pets} onEdit={openEdit} onDelete={handleDelete} />
+          <PetsTable
+            pets={pets}
+            onEdit={openEdit}
+            onDelete={handleDelete}
+            sortBy={sortBy}
+            order={order}
+            onSort={handleSortColumn}
+          />
         )}
       </div>
 

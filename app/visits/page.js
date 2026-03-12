@@ -118,6 +118,22 @@ export default function VisitsPage() {
   function handleDateFrom(val) { setDateFrom(val); setPage(1); }
   function handleDateTo(val)   { setDateTo(val);   setPage(1); }
 
+  /**
+   * Called when a sortable column header is clicked.
+   * Toggles direction if the same field is active; switches to new field with
+   * sensible default direction (desc for date, asc for price).
+   *
+   * @param {string} field
+   */
+  function handleSortColumn(field) {
+    if (sortBy === field) {
+      setSort(`${field}:${order === 'asc' ? 'desc' : 'asc'}`);
+    } else {
+      setSort(`${field}:${field === 'date' ? 'desc' : 'asc'}`);
+    }
+    setPage(1);
+  }
+
   // ── CRUD handlers ─────────────────────────────────────────────────────────
 
   /**
@@ -259,6 +275,9 @@ export default function VisitsPage() {
             visits={visits}
             onEdit={(visit) => setEditingVisit(visit)}
             onDelete={handleDelete}
+            sortBy={sortBy}
+            order={order}
+            onSort={handleSortColumn}
           />
         )}
       </div>

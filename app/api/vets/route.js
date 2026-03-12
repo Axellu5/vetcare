@@ -8,8 +8,36 @@
 
 import { NextResponse } from "next/server";
 import { ResponseFactory } from "@/lib/patterns/responseFactory";
-import { getSortStrategy, SortContext } from "@/lib/patterns/strategy";
 import prisma from "@/lib/prisma";
+
+/**
+ * Sorts an array of vet DTOs with Lithuanian locale-aware comparison.
+ *
+ * "name" sort — sorts by lastName then firstName using localeCompare("lt"),
+ *   ensuring correct Lithuanian diacritic ordering (Ą after A, Š after S, etc.)
+ *   instead of the Unicode default that places diacritics after Z.
+ * "date" sort — sorts by createdAt timestamp.
+ *
+ * @param {object[]} dtos   - Vet DTOs with firstName, lastName, createdAt.
+ * @param {string}   sortBy - "name" | "date"
+ * @param {string}   order  - "asc" | "desc"
+ * @returns {object[]} New sorted array.
+ */
+function sortVets(dtos, sortBy, order) {
+  return [...dtos].sort((a, b) => {
+    let cmp;
+    if (sortBy === "date") {
+      const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      cmp = tA - tB;
+    } else {
+      cmp =
+        (a.lastName  ?? "").localeCompare(b.lastName  ?? "", "lt", { sensitivity: "accent" }) ||
+        (a.firstName ?? "").localeCompare(b.firstName ?? "", "lt", { sensitivity: "accent" });
+    }
+    return order === "desc" ? -cmp : cmp;
+  });
+}
 
 export async function GET(request) {
   try {
@@ -31,17 +59,24 @@ export async function GET(request) {
         }
       : {};
 
+    // Fetch ALL filtered records — no skip/take, no DB-level orderBy.
+    // Lithuanian locale sorting must happen in JS (see sortVets above).
     const [total, records] = await Promise.all([
       prisma.vet.count({ where }),
-      prisma.vet.findMany({ where, include: { _count: { select: { visits: true } } }, skip: (page - 1) * limit, take: limit }),
+      prisma.vet.findMany({ where, include: { _count: { select: { visits: true } } } }),
     ]);
 
-    // Add computed fullName for Strategy sort compatibility
-    let dtos = records.map((v) => ({ ...v, name: `${v.firstName} ${v.lastName}`, visitCount: v._count?.visits ?? 0 }));
-    const ctx = new SortContext(getSortStrategy(sortBy));
-    dtos = ctx.executeSort(dtos, order);
+    let dtos = records.map((v) => ({
+      ...v,
+      name:       `${v.firstName} ${v.lastName}`,
+      visitCount: v._count?.visits ?? 0,
+    }));
 
-    return NextResponse.json(ResponseFactory.list(dtos, total, page, limit));
+    dtos = sortVets(dtos, sortBy, order);
+    const start = (page - 1) * limit;
+    const paginatedDtos = dtos.slice(start, start + limit);
+
+    return NextResponse.json(ResponseFactory.list(paginatedDtos, total, page, limit));
   } catch (error) {
     console.error("[GET /api/vets]", error);
     return NextResponse.json(ResponseFactory.error("Failed to fetch vets"), { status: 500 });

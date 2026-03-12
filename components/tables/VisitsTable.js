@@ -2,12 +2,46 @@
  * @fileoverview VisitsTable — renders a list of visit records in a table.
  *
  * Displays columns: Data, Gyvūnas, Savininkas, Veterinaras, Diagnozė, Paslaugos, Suma, Veiksmai.
+ * "Data" is sortable by "date" and "Suma" is sortable by "price" — clicking these headers
+ * triggers onSort with the corresponding field name. Sort direction is shown via ↑/↓ icons.
  * Each row has View, Edit, and Delete action buttons.
  */
 
 'use client';
 
 import Link from 'next/link';
+
+// ---------------------------------------------------------------------------
+// SortableHeader
+// ---------------------------------------------------------------------------
+
+/**
+ * A table header cell that triggers sorting when clicked.
+ * Shows ↑ (asc) or ↓ (desc) for the active column; neutral icon otherwise.
+ *
+ * @param {{ label: string, field: string, sortBy: string, order: string, onSort: Function }} props
+ */
+function SortableHeader({ label, field, sortBy, order, onSort }) {
+  const active = sortBy === field;
+  return (
+    <th
+      onClick={() => onSort(field)}
+      className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide
+        cursor-pointer select-none hover:text-gray-700 hover:bg-gray-100 transition-colors"
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {active ? (
+          order === 'asc'
+            ? <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
+            : <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+        ) : (
+          <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" /></svg>
+        )}
+      </span>
+    </th>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -72,12 +106,15 @@ function VisitRow({ visit, onEdit, onDelete }) {
  * VisitsTable component.
  *
  * @param {{
- *   visits: object[],
- *   onEdit: (visit: object) => void,
- *   onDelete: (id: number) => void
+ *   visits:  object[],
+ *   onEdit:  (visit: object) => void,
+ *   onDelete: (id: number) => void,
+ *   sortBy?: string,
+ *   order?:  string,
+ *   onSort?: (field: string) => void
  * }} props
  */
-export default function VisitsTable({ visits, onEdit, onDelete }) {
+export default function VisitsTable({ visits, onEdit, onDelete, sortBy = '', order = 'asc', onSort = () => {} }) {
   if (visits.length === 0) {
     return (
       <div className="py-14 text-center text-gray-400 text-sm">
@@ -91,16 +128,16 @@ export default function VisitsTable({ visits, onEdit, onDelete }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-100">
-            {['Data', 'Gyvūnas', 'Savininkas', 'Veterinaras', 'Diagnozė', 'Paslaugos', 'Suma', 'Veiksmai'].map((col, i) => (
-              <th
-                key={col}
-                className={`px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide ${
-                  i === 7 ? 'text-right' : 'text-left'
-                }`}
-              >
+            <SortableHeader label="Data"       field="date"  sortBy={sortBy} order={order} onSort={onSort} />
+            {['Gyvūnas', 'Savininkas', 'Veterinaras', 'Diagnozė', 'Paslaugos'].map((col) => (
+              <th key={col} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 {col}
               </th>
             ))}
+            <SortableHeader label="Suma"       field="price" sortBy={sortBy} order={order} onSort={onSort} />
+            <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Veiksmai
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">

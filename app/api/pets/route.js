@@ -13,6 +13,19 @@ import prisma from "@/lib/prisma";
 
 const petService = new PetService();
 
+/**
+ * Maps a sortBy field name to a Prisma orderBy clause for the Pet model.
+ * "date" maps to createdAt because Pet has no visit date — it has a creation timestamp.
+ *
+ * @param {string} sortBy
+ * @param {"asc"|"desc"} order
+ * @returns {object}
+ */
+function buildPetOrderBy(sortBy, order) {
+  if (sortBy === "date") return { createdAt: order };
+  return { name: order }; // default: alphabetical by name
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -27,10 +40,11 @@ export async function GET(request) {
 
     const where   = petService.buildWhere({ search, species, ownerId });
     const include = petService.getInclude();
+    const orderBy = buildPetOrderBy(sortBy, order);
 
     const [total, records] = await Promise.all([
       prisma.pet.count({ where }),
-      prisma.pet.findMany({ where, include, skip: (page - 1) * limit, take: limit }),
+      prisma.pet.findMany({ where, include, orderBy, skip: (page - 1) * limit, take: limit }),
     ]);
 
     let dtos = petService.transformMany(records);

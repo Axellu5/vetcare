@@ -2,6 +2,8 @@
  * @fileoverview PetsTable — renders a list of pet records in a table.
  *
  * Columns: Vardas, Rūšis, Veislė, Amžius, Savininkas, Veiksmai.
+ * "Vardas" is a sortable column — clicking it triggers onSort("name").
+ * Sort direction is indicated by an up/down arrow next to the active column label.
  * Species displayed as colour-coded badges.
  * Clicking the pet name navigates to the detail page (/pets/:id).
  * Delete requests browser confirmation before calling onDelete.
@@ -60,6 +62,38 @@ function formatAge(age) {
   if (age === 1) return '1 metai';
   if (age >= 2 && age <= 9) return `${age} metai`;
   return `${age} metų`;
+}
+
+// ---------------------------------------------------------------------------
+// SortableHeader
+// ---------------------------------------------------------------------------
+
+/**
+ * A table header cell that triggers sorting when clicked.
+ * Shows ↑ (asc) or ↓ (desc) for the active column; neutral icon otherwise.
+ *
+ * @param {{ label: string, field: string, sortBy: string, order: string, onSort: Function }} props
+ */
+function SortableHeader({ label, field, sortBy, order, onSort }) {
+  const active = sortBy === field;
+  return (
+    <th
+      onClick={() => onSort(field)}
+      className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide
+        cursor-pointer select-none hover:text-gray-700 hover:bg-gray-100 transition-colors"
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {active ? (
+          order === 'asc'
+            ? <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
+            : <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+        ) : (
+          <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" /></svg>
+        )}
+      </span>
+    </th>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -142,12 +176,15 @@ function PetRow({ pet, onEdit, onDelete }) {
  * PetsTable component.
  *
  * @param {{
- *   pets: object[],
- *   onEdit: (pet: object) => void,
- *   onDelete: (id: number) => void
+ *   pets:    object[],
+ *   onEdit:  (pet: object) => void,
+ *   onDelete: (id: number) => void,
+ *   sortBy?: string,
+ *   order?:  string,
+ *   onSort?: (field: string) => void
  * }} props
  */
-export default function PetsTable({ pets, onEdit, onDelete }) {
+export default function PetsTable({ pets, onEdit, onDelete, sortBy = '', order = 'asc', onSort = () => {} }) {
   if (pets.length === 0) {
     return (
       <div className="py-14 text-center text-gray-400 text-sm">
@@ -161,15 +198,15 @@ export default function PetsTable({ pets, onEdit, onDelete }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-100">
-            {['Vardas', 'Rūšis', 'Veislė', 'Amžius', 'Savininkas', 'Veiksmai'].map((col, i) => (
-              <th
-                key={col}
-                className={`px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide
-                  ${i === 5 ? 'text-right' : 'text-left'}`}
-              >
+            <SortableHeader label="Vardas" field="name" sortBy={sortBy} order={order} onSort={onSort} />
+            {['Rūšis', 'Veislė', 'Amžius', 'Savininkas'].map((col) => (
+              <th key={col} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 {col}
               </th>
             ))}
+            <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Veiksmai
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">

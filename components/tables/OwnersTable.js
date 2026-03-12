@@ -2,6 +2,8 @@
  * @fileoverview OwnersTable — renders a list of owner records in a table.
  *
  * Displays columns: Vardas ir pavardė, El. paštas, Telefonas, Gyvūnai, Veiksmai.
+ * "Vardas ir pavardė" is a sortable column — clicking it triggers onSort("name").
+ * Sort direction is indicated by an up/down arrow next to the active column label.
  * Each row has Edit and Delete action buttons.
  * Delete asks for browser confirmation before calling the onDelete callback.
  */
@@ -24,6 +26,45 @@ function petSuffix(n) {
   if (last === 1) return 'as';   // 1, 21, 31 …
   if (last >= 2 && last <= 9) return 'ai'; // 2–9, 22–29 …
   return 'ų';                    // 0, 10, 20 …
+}
+
+// ---------------------------------------------------------------------------
+// SortableHeader
+// ---------------------------------------------------------------------------
+
+/**
+ * A table header cell that can be clicked to sort by the given field.
+ * Shows ↑ when active + asc, ↓ when active + desc, and a neutral icon otherwise.
+ *
+ * @param {{
+ *   label:   string,
+ *   field:   string,
+ *   sortBy:  string,
+ *   order:   string,
+ *   onSort:  (field: string) => void,
+ *   className?: string
+ * }} props
+ */
+function SortableHeader({ label, field, sortBy, order, onSort, className = '' }) {
+  const active = sortBy === field;
+  return (
+    <th
+      onClick={() => onSort(field)}
+      className={`px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide
+        cursor-pointer select-none hover:text-gray-700 hover:bg-gray-100 transition-colors ${className}`}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {active ? (
+          order === 'asc'
+            ? <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
+            : <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+        ) : (
+          <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" /></svg>
+        )}
+      </span>
+    </th>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -99,12 +140,15 @@ function OwnerRow({ owner, onEdit, onDelete }) {
  * OwnersTable component.
  *
  * @param {{
- *   owners: object[],
- *   onEdit: (owner: object) => void,
- *   onDelete: (id: number) => void
+ *   owners:  object[],
+ *   onEdit:  (owner: object) => void,
+ *   onDelete: (id: number) => void,
+ *   sortBy?: string,
+ *   order?:  string,
+ *   onSort?: (field: string) => void
  * }} props
  */
-export default function OwnersTable({ owners, onEdit, onDelete }) {
+export default function OwnersTable({ owners, onEdit, onDelete, sortBy = '', order = 'asc', onSort = () => {} }) {
   if (owners.length === 0) {
     return (
       <div className="py-14 text-center text-gray-400 text-sm">
@@ -118,9 +162,7 @@ export default function OwnersTable({ owners, onEdit, onDelete }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-100">
-            <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Vardas ir pavardė
-            </th>
+            <SortableHeader label="Vardas ir pavardė" field="name" sortBy={sortBy} order={order} onSort={onSort} />
             <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
               El. paštas
             </th>

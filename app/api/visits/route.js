@@ -31,16 +31,12 @@ export async function GET(request) {
 
     const where   = visitService.buildWhere({ petId, vetId, from, to });
     const include = visitService.getInclude();
+    // "price" (totalCost) is a computed field — cannot sort at DB level; fall back to date.
+    const orderBy = sortBy === "price" ? { date: "desc" } : { date: order };
 
     const [total, records] = await Promise.all([
       prisma.visit.count({ where }),
-      prisma.visit.findMany({
-        where,
-        include,
-        orderBy: { date: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
+      prisma.visit.findMany({ where, include, orderBy, skip: (page - 1) * limit, take: limit }),
     ]);
 
     let dtos = visitService.transformMany(records);

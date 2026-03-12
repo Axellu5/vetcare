@@ -109,6 +109,21 @@ export default function OwnersPage() {
     setPage(1);
   }
 
+  /**
+   * Called when a sortable column header is clicked.
+   * Toggles direction if the same field is active; switches to the new field (asc) otherwise.
+   *
+   * @param {string} field
+   */
+  function handleSortColumn(field) {
+    if (sortBy === field) {
+      setSort(`${field}:${order === 'asc' ? 'desc' : 'asc'}`);
+    } else {
+      setSort(`${field}:asc`);
+    }
+    setPage(1);
+  }
+
   // ── Modal handlers ─────────────────────────────────────────────────────────
 
   function openCreate()        { setEditingOwner(null);  setModalOpen(true);  }
@@ -240,6 +255,9 @@ export default function OwnersPage() {
             owners={owners}
             onEdit={openEdit}
             onDelete={handleDelete}
+            sortBy={sortBy}
+            order={order}
+            onSort={handleSortColumn}
           />
         )}
       </div>
