@@ -33,11 +33,11 @@ export async function GET(request) {
 
     const [total, records] = await Promise.all([
       prisma.vet.count({ where }),
-      prisma.vet.findMany({ where, skip: (page - 1) * limit, take: limit }),
+      prisma.vet.findMany({ where, include: { _count: { select: { visits: true } } }, skip: (page - 1) * limit, take: limit }),
     ]);
 
     // Add computed fullName for Strategy sort compatibility
-    let dtos = records.map((v) => ({ ...v, name: `${v.firstName} ${v.lastName}` }));
+    let dtos = records.map((v) => ({ ...v, name: `${v.firstName} ${v.lastName}`, visitCount: v._count?.visits ?? 0 }));
     const ctx = new SortContext(getSortStrategy(sortBy));
     dtos = ctx.executeSort(dtos, order);
 
