@@ -108,16 +108,6 @@ export async function PUT(request, { params }) {
         oldVisit.date,
       );
 
-      console.log("[PUT /api/visits/:id] Appointment sync:", {
-        visitId: id,
-        oldDate: toDateStr(oldVisit.date),
-        newDate: newDate ? toDateStr(newDate) : null,
-        oldVetId: oldVisit.vetId,
-        newVetId,
-        newTimeSlot,
-        matchingAppointments: matchingIds,
-      });
-
       if (matchingIds.length > 0) {
         await prisma.appointment.updateMany({
           where: { id: { in: matchingIds } },
@@ -164,7 +154,6 @@ export async function DELETE(request, { params }) {
       await prisma.appointment.deleteMany({
         where: { id: { in: matchingIds } },
       });
-      console.log("[DELETE /api/visits/:id] Deleted matching appointments:", matchingIds);
     }
 
     return NextResponse.json(ResponseFactory.success(result, "Visit deleted successfully"));
